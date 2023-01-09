@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('fs'); // <--- need to make use of this
 const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
