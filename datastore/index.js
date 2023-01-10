@@ -3,33 +3,27 @@ const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
 
-var items = {};
+const items = {};
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
 exports.create = (text, callback) => {
-  var id = null;
+  let id = null;
 
   counter.getNextUniqueId((err, value) => {
     id = value;
-
     items[id] = text;
 
     let newFile = exports.dataDir + '/' + id + '.txt';
 
-    // console.log('items: ', items, 'newFile: ', newFile);
-
     fs.writeFile(newFile, text, (err) => {
-
       if (err) {
-        throw ('error: could not write the counter');
+        new Error('Error: could not write the counter!');
       } else {
         callback(null, { id, text });
       }
     })
-
-
-  })
+  });
 
 };
 
@@ -38,7 +32,7 @@ exports.readAll = (callback) => {
 
   fs.readdir(exports.dataDir, (err, files) => {
     if (err) {
-      throw ('error: could not read the directory');
+      new Error('Error: could not read the directory!');
     } else {
 
       // console.log('dataDir: ', exports.dataDir, '<<>>', 'files: ', files);
@@ -58,7 +52,7 @@ exports.readAll = (callback) => {
         file = file.replace('.txt', '');
         return {id: file, text: file};
       });
-      console.log('mappedFiles: ', mappedFiles);
+      // console.log('mappedFiles: ', mappedFiles);
       callback(null, mappedFiles);
 
       // for each fileName in files (keeping tabs on idx)
@@ -66,6 +60,7 @@ exports.readAll = (callback) => {
 
       //   let fullFileName = exports.dataDir + '/' + fileName;
 
+      //    ***readFile returns a raw buffer if no encoding e.g. 'utf8' is specified in 2nd arg***
       //   fs.readFile(fullFileName, (err, fileData) => {
 
       //     if (err) {
@@ -84,15 +79,13 @@ exports.readAll = (callback) => {
       // // console.log('files here: ', files)
       // callback(null, files);
     }
-  })
+  });
 };
 
 exports.readOne = (id, callback) => {
-  //we would want items  to be populated here to check validity
-  // or we can check current files stored?ur call
+  // is working w/ no edits and I am very suspicous of this
+  let text = items[id];
 
-
-  var text = items[id];
   if (!text) {
     callback(new Error(`No item with id: ${id}`));
   } else {
@@ -102,23 +95,48 @@ exports.readOne = (id, callback) => {
 
 exports.update = (id, text, callback) => {
   //read n write to id ref with text
-  var item = items[id];
+
+  let item = items[id];
+  // console.log('id: ', id, 'text: ', text, 'items before: ', items);
+
   if (!item) {
     callback(new Error(`No item with id: ${id}`));
   } else {
     items[id] = text;
-    callback(null, { id, text });
+
+    // the 'items' storage now has updated todo item
+    // now we have to write that item (overwrite it) on persistent storage
+    let newFile = exports.dataDir + '/' + id + '.txt';
+
+    fs.writeFile(newFile, text, (err) => {
+      if (err) {
+        new Error('Error: could not write this file!');
+      } else {
+        callback(null, { id, text });
+      }
+    })
   }
 };
 
 exports.delete = (id, callback) => {
   //delete the file
-  var item = items[id];
-  delete items[id];
+
+
+  let item = items[id];
+  let deadFile = exports.dataDir + '/' + id + '.txt';
+
   if (!item) {
     // report an error if item not found
     callback(new Error(`No item with id: ${id}`));
   } else {
+    delete items[id];
+
+    // use fs.unlink(file name, callback def) to remove from persistent storage
+    fs.unlink(deadFile, (err) => {
+      if (err) {
+       callback(new Error('Error: could not delete this file!'));
+      }
+    });
     callback();
   }
 };
