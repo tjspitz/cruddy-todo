@@ -13,16 +13,16 @@ exports.create = (text, callback) => {
   counter.getNextUniqueId((err, value) => {
     id = value;
 
-    // console.log(exports.dataDir);
     items[id] = text;
 
+    let newFile = exports.dataDir + '/' + id + '.txt';
 
-    // console.log('current id', id)
-    // console.log('data path TOCREATE', exports.dataDir + '/' + id + '.txt');
+    // console.log('items: ', items, 'newFile: ', newFile);
 
-    fs.writeFile(exports.dataDir + '/' + id + '.txt', text, (err) => {
+    fs.writeFile(newFile, text, (err) => {
+
       if (err) {
-        throw ('error writing counter');
+        throw ('error: could not write the counter');
       } else {
         callback(null, { id, text });
       }
@@ -34,34 +34,55 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  //get data from exports.dataDir
-  // read the data from fs.readDir
+  // read files (arr of file names) from exports.dataDir (the path as a str)
 
-  fs.readdir(exports.dataDir, (err, data) => {
+  fs.readdir(exports.dataDir, (err, files) => {
     if (err) {
-      throw ('Error!');
+      throw ('error: could not read the directory');
     } else {
-      //[test1.txt, test2.txt]
 
-      //when do we know when all of the elements are exhausted?
-      //idk if the underscore fx allows for index? might need a way to keep track of index
-      _.each(data, (fileName, idx) => {
-        // items[id] = text;
-        fs.readFile(exports.dataDir + '/' + fileName, (err, fileData) => {
-          if (err) {
-            callback(null, 0);
-          } else {
-            items[ fileName.replace('.txt', '') ] = fileData;
-            if (idx === data.length - 1) {
-              console.log('items here: ', items)
-              callback(null, items);
-            }
-          }
-        });
+      // console.log('dataDir: ', exports.dataDir, '<<>>', 'files: ', files);
 
+      let mappedFiles = _.map(files, (file, idx) => {
+        let fullFileName = exports.dataDir + '/' + file;
+
+        // GOT RID OF THIS AND NOW IT ALL WORKS.....????
+        // fs.readFile(fullFileName, (err, fileData) => {
+        //   if (err) {
+        //     callback(null, 0);
+        //   } else {
+        //     callback(null, fileData);
+        //   }
+        // });
+
+        file = file.replace('.txt', '');
+        return {id: file, text: file};
       });
-      console.log('data here: ', data)
-      callback(null, data);
+      console.log('mappedFiles: ', mappedFiles);
+      callback(null, mappedFiles);
+
+      // for each fileName in files (keeping tabs on idx)
+      // _.each(files, (fileName, idx) => {
+
+      //   let fullFileName = exports.dataDir + '/' + fileName;
+
+      //   fs.readFile(fullFileName, (err, fileData) => {
+
+      //     if (err) {
+      //       callback(null, 0);
+      //     } else {
+
+      //       items[ fileName.replace('.txt', '') ] = fileData;
+      //       if (idx === files.length - 1) {
+      //         console.log('items here: ', items)
+      //         callback(null, items);
+      //       }
+      //     }
+      //   });
+
+      // });
+      // // console.log('files here: ', files)
+      // callback(null, files);
     }
   })
 };
@@ -69,6 +90,8 @@ exports.readAll = (callback) => {
 exports.readOne = (id, callback) => {
   //we would want items  to be populated here to check validity
   // or we can check current files stored?ur call
+
+
   var text = items[id];
   if (!text) {
     callback(new Error(`No item with id: ${id}`));
