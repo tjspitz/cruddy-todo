@@ -35,55 +35,57 @@ exports.readAll = (callback) => {
       new Error('Error: could not read the directory!');
     } else {
 
-      // console.log('dataDir: ', exports.dataDir, '<<>>', 'files: ', files);
+        // let mappedFiles = _.map(files, (file, idx) => {
+        //   let fullFileName = exports.dataDir + '/' + file;
 
-      let mappedFiles = _.map(files, (file, idx) => {
-        let fullFileName = exports.dataDir + '/' + file;
+        //   fs.readFile(fullFileName, 'utf8', (err, fileData) => {
+        //     if (err) {
+        //       callback(null, 0);
+        //     } else {
+        //       callback(null, fileData);
+        //     }
+        //   });
 
-        // GOT RID OF THIS AND NOW IT ALL WORKS.....????
-        // fs.readFile(fullFileName, (err, fileData) => {
-        //   if (err) {
-        //     callback(null, 0);
-        //   } else {
-        //     callback(null, fileData);
-        //   }
+        //   file = file.replace('.txt', '');
+        //   return {id: file, text: file};
+
         // });
+        //   callback(null, mappedFiles);
 
-        file = file.replace('.txt', '');
-        return {id: file, text: file};
-      });
-      // console.log('mappedFiles: ', mappedFiles);
-      callback(null, mappedFiles);
 
       // for each fileName in files (keeping tabs on idx)
-      // _.each(files, (fileName, idx) => {
+      _.each(files, (fileName, idx) => {
 
-      //   let fullFileName = exports.dataDir + '/' + fileName;
+        let fullFileName = exports.dataDir + '/' + fileName;
 
-      //    ***readFile returns a raw buffer if no encoding e.g. 'utf8' is specified in 2nd arg***
-      //   fs.readFile(fullFileName, (err, fileData) => {
+        //  ***readFile returns a raw buffer if no encoding e.g. 'utf8' is specified in 2nd arg***
+        fs.readFile(fullFileName, 'utf8', (err, fileData) => {
 
-      //     if (err) {
-      //       callback(null, 0);
-      //     } else {
+          if (err) {
+            callback(null, 0);
+          } else {
 
-      //       items[ fileName.replace('.txt', '') ] = fileData;
-      //       if (idx === files.length - 1) {
-      //         console.log('items here: ', items)
-      //         callback(null, items);
-      //       }
-      //     }
-      //   });
+            items[ fileName.replace('.txt', '') ] = fileData;
+            if (idx === files.length - 1) {
+              let itemsForCB = Object.entries(items).map(([key,value]) => ({'id' : key, 'text' : value}));
+              callback(null, itemsForCB);
+            }
+          }
+        });
 
-      // });
-      // // console.log('files here: ', files)
-      // callback(null, files);
+      });
+
+    }
+
+    if(files.length === 0){
+      callback(null,[])
     }
   });
 };
 
 exports.readOne = (id, callback) => {
   // is working w/ no edits and I am very suspicous of this
+  // because we did the readFile thing in readAll but in a way that it works
   let text = items[id];
 
   if (!text) {
@@ -94,10 +96,8 @@ exports.readOne = (id, callback) => {
 };
 
 exports.update = (id, text, callback) => {
-  //read n write to id ref with text
 
   let item = items[id];
-  // console.log('id: ', id, 'text: ', text, 'items before: ', items);
 
   if (!item) {
     callback(new Error(`No item with id: ${id}`));
@@ -105,7 +105,7 @@ exports.update = (id, text, callback) => {
     items[id] = text;
 
     // the 'items' storage now has updated todo item
-    // now we have to write that item (overwrite it) on persistent storage
+    // now we have to overwrite that item in persistent storage
     let newFile = exports.dataDir + '/' + id + '.txt';
 
     fs.writeFile(newFile, text, (err) => {
@@ -119,19 +119,18 @@ exports.update = (id, text, callback) => {
 };
 
 exports.delete = (id, callback) => {
-  //delete the file
-
 
   let item = items[id];
   let deadFile = exports.dataDir + '/' + id + '.txt';
 
   if (!item) {
-    // report an error if item not found
     callback(new Error(`No item with id: ${id}`));
   } else {
     delete items[id];
 
-    // use fs.unlink(file name, callback def) to remove from persistent storage
+    // use fs.unlink(file name, callback def) to
+      // remove from persistent storage
+    // unlink only needs an 'err' cb
     fs.unlink(deadFile, (err) => {
       if (err) {
        callback(new Error('Error: could not delete this file!'));

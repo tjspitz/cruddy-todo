@@ -51,8 +51,6 @@ exports.getNextUniqueId = (callback) => {
   readCounter((err, value) => {
     writeCounter(value + 1, (err,  value = value) => {
       callback(null, value);
-      //console.log('callback done, returning', value)
-      //return value;
     })
   })
 };
